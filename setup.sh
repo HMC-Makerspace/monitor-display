@@ -3,7 +3,7 @@
 # Setup file for Raspberry Pi
 
 # Enable console-based auto-login
-sudo raspi-config do_boot_behaviour B2
+sudo raspi-config nonint do_boot_behaviour B2
 
 
 # Install FBI, the frame buffer interface, used for showing photos
