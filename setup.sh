@@ -7,8 +7,7 @@ sudo raspi-config nonint do_boot_behaviour B2
 
 
 # Install FBI, the frame buffer interface, used for showing photos
-sudo apt-get install fbi
-
+sudo apt-get -y install fbi at
 
 # Define the fbi cron job
 NEW_CRON_JOB="@reboot sleep 15; cd Pictures && sudo fbi --noverbose -a -t 20 -T 1 *.jpg"

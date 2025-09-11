@@ -1,2 +1,2 @@
 # monitor-display
-HMC Makerspace monitor display setup
+Setup and updates for HMC Makerspace monitor displays.

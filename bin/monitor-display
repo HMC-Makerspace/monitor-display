@@ -9,17 +9,17 @@ fi
 echo "*** Updating Makerspace Displays ***"
 
 SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
-HOSTS_FILENAME = "raspi_hosts.txt"
-HOSTS_PATH = "$SCRIPT_DIR/$HOST_IP_FILENAME"
+HOSTS_FILENAME="raspi_hosts.txt"
+HOSTS_PATH="$SCRIPT_DIR/$HOSTS_FILENAME"
 if [ -f "$HOSTS_PATH" ]; then
 	echo "* $HOSTS_FILENAME found, reading..."
 else
-	echo "* Error: no $HOSTS_FILENAME file found in the script directory."
+	echo "* Error: no file found at $HOSTS_PATH."
 	echo "* Please create a $HOSTS_FILENAME file in $SCRIPT_DIR with space-separated"
 	echo "* host information for each Raspberry Pi, such as \"makerspace@172.28.0.1\""
 	exit 1
 fi
-HOSTS = $(cat "$HOSTS_PATH")
+HOSTS=$(cat "$HOSTS_PATH")
 if [ -z "$HOSTS" ]; then
 	echo "* Error: $HOSTS_FILENAME file found in $SCRIPT_DIR is empty."
 	echo "* Please enter space-separated host information for each Raspberry Pi,"
@@ -38,10 +38,12 @@ find . -name "makerspace-display*.jpg" | xargs rm
 
 echo "* Created zip archive."
 
+SCHEDULED_TIME=$(date -v +1M "+%H:%M")
+
 for i in $HOSTS; do
 	echo "* Transfering zip to $i..."
 	scp makerspace-display.zip $i:~/Pictures
-	ssh $i "cd Pictures; rm *.jpg; unzip makerspace-display.zip; sudo killall fbi; sudo fbi --noverbose -a -t 20 -T 1 *.jpg"
+	ssh $i "echo \"cd Pictures; rm *.jpg; unzip makerspace-display.zip; sudo killall fbi; sudo fbi --noverbose -a -t 20 -T 1 *.jpg\" | at $SCHEDULED_TIME"
 	echo "* Restarted FBI on $i"
 done
 
