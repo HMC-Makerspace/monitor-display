@@ -10,14 +10,17 @@ sudo raspi-config nonint do_boot_behaviour B2
 sudo apt-get install fbi
 
 
-# from https://stackoverflow.com/questions/878600/how-to-create-a-cron-job-using-bash-automatically-without-the-interactive-editor
-# write out current crontab
-crontab -l > mycron
-# Install a cron to restart FBI on reboot
-echo "@reboot sleep 20; cd Pictures && sudo killall fbi && sudo fbi --noverbose -a -t 20 -T 1 *.jpg" >> mycron
-#install new cron file
-crontab mycron
-rm mycron
+# Define the fbi cron job
+NEW_CRON_JOB="@reboot sleep 20; cd Pictures && sudo killall fbi && sudo fbi --noverbose -a -t 20 -T 1 *.jpg"
+
+# Check if the cron job already exists to prevent duplication
+if ! crontab -l | grep -qF -- "$NEW_CRON_JOB"; then
+    # If the cron job doesn't exist, add it
+    (crontab -l 2>/dev/null; echo "$NEW_CRON_JOB") | crontab -
+    echo "Cron job added successfully."
+else
+    echo "Cron job already exists, no changes made."
+fi
 
 
 # Download one sample jpg
