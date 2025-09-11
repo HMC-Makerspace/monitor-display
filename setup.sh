@@ -11,7 +11,7 @@ sudo apt-get install fbi
 
 
 # Define the fbi cron job
-NEW_CRON_JOB="@reboot sleep 20; cd Pictures && sudo killall fbi && sudo fbi --noverbose -a -t 20 -T 1 *.jpg"
+NEW_CRON_JOB="@reboot sleep 15; cd Pictures && sudo fbi --noverbose -a -t 20 -T 1 *.jpg"
 
 # Check if the cron job already exists to prevent duplication
 if ! crontab -l | grep -qF -- "$NEW_CRON_JOB"; then
