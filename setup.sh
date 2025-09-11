@@ -24,7 +24,7 @@ fi
 
 
 # Download one sample jpg
-curl -sSL -o "$HOME/Pictures/Makerspace.jpg" https://raw.githubusercontent.com/HMC-Makerspace/monitor-display/refs/heads/main/Makerspace.jpg
+curl -sSL https://raw.githubusercontent.com/HMC-Makerspace/monitor-display/refs/heads/main/Makerspace.jpg > "$HOME/Pictures/Makerspace.jpg"
 
 
 # Reboot to update configuration
