@@ -1,8 +1,35 @@
 #!/bin/bash
 
+
+usage() { echo "Usage: $0 [-d <dpi>] [-q <quality%>] [-y <delay>] filename.pdf" 1>&2; exit 0; }
+
+density=144
+quality=90
+delay=1
+
+# Check for magick properties
+while getopts "d:q:y:" opt; do
+	case $opt in
+		d)
+			density=${OPTARG}
+			;;
+		q)
+			quality=${OPTARG}
+			;;
+		y)
+			delay=${OPTARG}
+			;;
+		\?)
+			usage
+			;;
+	esac
+done
+# Remove options from argument
+shift "$((OPTIND-1))"
+
 # Fail if no input
 if [ "$#" -eq 0 ]; then
-	echo "* Error: no input provided. Please include a single PDF file as an argument."
+	echo "* Error: no pdf input provided. Please include a single PDF file as an argument."
 	exit 1
 fi
 
@@ -29,7 +56,7 @@ fi
 
 echo "* Converting $1 to jpgs..."
 
-magick -density 300 -quality 90 "$1" makerspace-display-%01d.jpg
+magick -density $density -quality $quality "$1" makerspace-display-%01d.jpg
 
 echo "* Conversion complete."
 
@@ -38,13 +65,17 @@ find . -name "makerspace-display*.jpg" | xargs rm
 
 echo "* Created zip archive."
 
-SCHEDULED_TIME=$(date -v +1M "+%H:%M")
-
 for i in $HOSTS; do
 	echo "* Transfering zip to $i..."
 	scp makerspace-display.zip $i:~/Pictures
-	ssh $i "echo \"cd Pictures; rm *.jpg; unzip makerspace-display.zip; sudo killall fbi; sudo fbi --noverbose -a -t 20 -T 1 *.jpg\" | at $SCHEDULED_TIME"
-	echo "* Restarted FBI on $i"
+	ssh $i "cd Pictures; rm *.jpg; unzip makerspace-display.zip"
+done
+
+SCHEDULED_TIME=$(date -v +"$delay"M "+%H:%M")
+
+for i in $HOSTS; do
+	echo "* Restarting $i..."
+	ssh $i "echo \"cd Pictures; sudo killall fbi; sudo fbi --noverbose -a -t 20 -T 1 *.jpg\" | at $SCHEDULED_TIME"
 done
 
 rm makerspace-display.zip
