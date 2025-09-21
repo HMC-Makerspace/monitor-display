@@ -43,9 +43,16 @@ Once this configuration file exists, you can now upload any PDF to the monitors 
 the `monitor-display` script will convert the PDF pages into JPGs, zip them into an archive, send the archive to each Pi over `scp`, and then `ssh` into each
 machine to restart the `fbi` slideshow process.
 
+The `monitor-display` script is used as follows:
+```sh
+monitor-display [-d <dpi>] [-q <quality%>] [-y <delay>] filename.pdf
+``` 
+where `<dpi>` is the DPI used for converting the given pdf into jpgs, `<quality%>` is the numeric value for the quality (where `-q 90` is 90% quality), and
+`<delay>` is the number of minutes to delay the update. These have default values of `d=144`, `q=90`, and `y=1`.
+
 ## Known Issues/Planned Features
 - The script only allows for a single PDF file as input, not multiple PDFs or other filetypes.
-- The JPG conversion is currently constant at 72 DPI and 85% quality, but future arguments to the `monitor-display` function should allow for customization.
-- In order to synchronize the monitors, we schedule the call to kill and restart the `fbi` process using the Linux `at` command. This is scheduled
-for 1 minute after the `monitor-display` is called, rounded down to the nearest minute. If the PDF conversion and transfer operations take longer than this
-amount of time, the monitors will not update properly.
+- ~~The JPG conversion is currently constant at 72 DPI and 85% quality, but future arguments to the `monitor-display` function should allow for customization~~.
+- In order to synchronize the monitors, we schedule the call to kill and restart the `fbi` process using the Linux `at` command. This is scheduled for 1
+minute after the zipped jpgs are sent to each device, rounded down to the nearest minute. If SSH-ing into the displays and restarting `fbi` takes longer than
+1 minute, the monitors will not update properly, and the `-y` argument should be used.
