@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 usage() { echo "Usage: $0 [-d <dpi>] [-q <quality%>] [-y <delay>] filename.pdf" 1>&2; exit 0; }
 
 density=144
@@ -71,7 +70,12 @@ for i in $HOSTS; do
 	ssh $i "cd Pictures; rm *.jpg; unzip makerspace-display.zip"
 done
 
-SCHEDULED_TIME=$(date -v +"$delay"M "+%H:%M")
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Darwin*)    SCHEDULED_TIME=$(date -v +"$delay"M "+%H:%M");;
+    *)    SCHEDULED_TIME=$(date -d "$delay minutes" "+%H:%M");;
+esac
+
 
 for i in $HOSTS; do
 	echo "* Restarting $i..."
