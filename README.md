@@ -1,8 +1,32 @@
-# monitor-display
+# monitor-display v2.0
 This repository stores the scripts necessary to setup and update Raspberry Pi displays for the HMC Makerspace monitors.
 
-## Pi Setup
-There are three main parts of monitor setup: flashing the Raspberry Pi, connecting to WiFi, and installing the setup script over SSH.
+## Setting up `rclone`
+As of v2.0, `monitor-display` now uses `rclone` to sync files between Google Drive and the monitors. In order to setup a new monitor,
+you will need to have an `rclone.conf` file in this directory. You can install `rclone` by following
+[these instructions](https://rclone.org/downloads/) or simply by running
+```bash
+brew install rclone
+```
+on a Mac.
+
+To create an `rclone` configuration file, run
+```bash
+rclone config --config rclone.conf
+```
+Configuration should be used as follows:
+1. Create a new remote with `n`, and name it `drive`.
+2. The storage type should also be `drive`.
+3. The client_id and client_secret should be known to the Website/IT Head Steward.
+4. Select `2` to use the `drive.readonly` scope.
+5. Skip the `service_account` creation, it is not needed
+6. Do not edit the advanced config.
+7. You will be prompted to login using your Google credentials to authorize the service.
+8. Once you have authorized `rclone`, type `y` to use a Shared/Team Drive, and select the appropriate drive.
+9. Finally, type `y` to confirm the creation of the `drive` remote, which will be used by the monitors for syncing.
+
+## Pi setup
+There are two main parts of monitor setup: flashing the Raspberry Pi and initializing the device with the monitor software.
 
 This guide assumes you have a Raspberry Pi (Zero 2W is used here, but any equivalently powerful machine should work as well), a micro
 SD card to store the Pi's operating system, and a laptop to use for SSH control.
@@ -10,49 +34,29 @@ SD card to store the Pi's operating system, and a laptop to use for SSH control.
 To start, flash the micro SD card with the 32-bit Raspbian operating system using the [Raspberry Pi Imager Software](https://www.raspberrypi.com/software/).
 
 When prompted if you would like to apply OS customizations, ensure that the following settings are provided:
-- Create a user account (here, assumed to be `makerspace`) and provide a secure password
-- Enable SSH
+- Create a user account with the name `makerspace` and provide a secure password
 - Set the locale to `United States/Los Angeles` and the keyboard layout to `us`
+- Set `Claremont-ETC` as the default WiFi SSID, and provide the appropriate password
+- Enable SSH with password login 
 
-Finish flashing the media, and upon completion insert it into the Raspberry Pi. Use the included micro USB to USB adapter to plug in a mouse for the next step.
-Once the machine boots (it should bypass the login sequence), go to the Wireless LAN icon in the top right corner, enable LAN, and connect to Claremont-ETC.
-Disconnect the mouse and plug in a keyboard to enter the password.
-Once connected, there should be a popup in the top right that shows the Pi's IP address, which you should note down (something like 172.28.111.111).
+Finish flashing the media, and upon completion insert it into the Raspberry Pi. When the Pi boots, it should automatically connect
+to the `Claremont-ETC` network and display its IP address in a popup. Note down this address (something like 172.28.111.111).
 
-On your personal machine, use `ssh makerspace@172.28.111.111` (replacing the Pi's account name and IP address as necessary) to connect to the Pi.
-Finally, run the setup script using `curl -sSL https://raw.githubusercontent.com/HMC-Makerspace/monitor-display/refs/heads/main/setup.sh | bash -`.
-This should install all necessary dependencies, install a CRON job to restart the slideshow on boot, and reboot the Pi to set the proper configuration.
-Finally, in order to update the displays properly, its best to allow your local deivce to access a passwordless SSH connection using a keygen.
-If you don't have any SSH keys on your devices, run `ssh-keygen`. Once you have a local key, you can share the public key with the Pi using
-`ssh-copy-id makerspace@172.28.111.111`.
+> Note: If you do not have any SSH keys installed on your computer, you will need to run `ssh-keygen` before continuing.
 
-## Update Displays
-To update all connected Pi displays, start by cloning this git repo on your local device. If you want direct access to the `monitor-display` script,
-add `path/to/monitor-display/bin` to your PATH.
+On your personal machine, run `./initialize.sh <ip address>` with the appropriate Pi IP address from the previous step.
+Enter the password you provided in the Raspberry Pi Imager setup, and watch the magic happen.
 
-To use the script, you will need `imagemagick` and `ghostscript` installed on your device, which can be done using `brew install imagemagick ghostscript`.
+This initialization script will install all the necessary dependencies, create a CRON job to sync the Pi's slideshow with a Google Drive folder,
+and reboot the Pi to set the proper configuration. At this point, the Pi should reboot and immediately enter the slideshow!
 
-Before uploading a slideshow, you must first define the Pi host configuration. If it doesn't already exists, create a `raspi_hosts.txt` file in the
-`bin` directory. This file should contain **space-separated hostnames** for all Raspberry Pis you want to be controlled. For example, this might
-contain
-```txt
-makerspace@172.28.111.111 makerspace@172.28.100.100
-```
+## Uploading new slides
+To change the sldies on the monitors, simply upload a new PDF file to the Active Presentation folder located
+[here](https://drive.google.com/drive/folders/1xeqqbb0E6t7Ze3OlKfgOyCuykidhcwKU).
 
-Once this configuration file exists, you can now upload any PDF to the monitors using the `monitor-display` command. Given a PDF file,
-the `monitor-display` script will convert the PDF pages into JPGs, zip them into an archive, send the archive to each Pi over `scp`, and then `ssh` into each
-machine to restart the `fbi` slideshow process.
-
-The `monitor-display` script is used as follows:
-```sh
-monitor-display [-d <dpi>] [-q <quality%>] [-y <delay>] filename.pdf
-``` 
-where `<dpi>` is the DPI used for converting the given pdf into jpgs, `<quality%>` is the numeric value for the quality (where `-q 90` is 90% quality), and
-`<delay>` is the number of minutes to delay the update. These have default values of `d=144`, `q=90`, and `y=1`.
-
-## Known Issues/Planned Features
-- The script only allows for a single PDF file as input, not multiple PDFs or other filetypes.
-- ~~The JPG conversion is currently constant at 72 DPI and 85% quality, but future arguments to the `monitor-display` function should allow for customization~~.
-- In order to synchronize the monitors, we schedule the call to kill and restart the `fbi` process using the Linux `at` command. This is scheduled for 1
-minute after the zipped jpgs are sent to each device, rounded down to the nearest minute. If SSH-ing into the displays and restarting `fbi` takes longer than
-1 minute, the monitors will not update properly, and the `-y` argument should be used.
+## Known Issues
+- Currently, all the monitors access a hard-coded drive folder, which must always be accessible in the same location.
+- Exactly one PDF must be in the drive folder at any time.
+- The maximum number of slides in any deck is 100.
+- All monitors use hard-coded `magick` settings for converting the slide PDF into images, which is 144 dpi and 90% quality.
+- It is not currently possible to synchronize slides across monitors.
